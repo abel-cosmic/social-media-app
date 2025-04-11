@@ -13,7 +13,7 @@ import logo from "@/assets/logo.png"; // Make sure this path is correct
 export { ErrorBoundary } from "expo-router";
 
 export const unstable_settings = {
-  initialRouteName: "(auth)/sign-up",
+  initialRouteName: "index",
 };
 
 // Custom Splash Screen Component
@@ -98,7 +98,7 @@ function RootLayoutNav() {
           backgroundColor: resolvedTheme === "dark" ? "#0c0a09" : "#ffffff",
         },
       }}
-      initialRouteName="(auth)/sign-up"
+      initialRouteName="index"
     >
       <Stack.Screen
         name="(tabs)"

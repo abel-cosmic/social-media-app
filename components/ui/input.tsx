@@ -41,25 +41,25 @@ export function Input({
       <View
         className={cn(
           "flex-row items-center border rounded-lg",
-          isDark ? "bg-stone-800 border-stone-700" : "bg-white border-zinc-200",
+          isDark ? "bg-background border-zinc-200" : "bg- border-zinc-200",
           props.multiline ? "min-h-[100px]" : "h-14",
           isFocused && "border-2" // Thicker border when focused
         )}
-        style={isFocused ? {
-          borderColor: focusRingColor,
-          shadowColor: focusRingColor,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.2,
-          shadowRadius: 10,
-          elevation: 2,
-        } : {}}
+        style={
+          isFocused
+            ? {
+                borderColor: focusRingColor,
+                shadowColor: focusRingColor,
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.2,
+                shadowRadius: 10,
+                elevation: 2,
+              }
+            : {}
+        }
       >
         <TextInput
-          className={cn(
-            "flex-1 px-4 py-2",
-            textColor,
-            className
-          )}
+          className={cn("flex-1 px-4 py-2", textColor, className)}
           placeholderTextColor={placeholderTextColor || defaultPlaceholderColor}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
