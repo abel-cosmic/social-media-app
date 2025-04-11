@@ -1,0 +1,51 @@
+import { DefaultTheme, DarkTheme } from "@react-navigation/native";
+
+export const CustomDefaultTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: "hsl(210, 40%, 98%)",
+    foreground: "hsl(222.2, 84%, 4.9%)",
+    card: "hsl(0, 0%, 100%)",
+    cardForeground: "hsl(222.2, 84%, 4.9%)",
+    text: "hsl(222.2, 84%, 4.9%)",
+    border: "hsl(158, 28%, 15%)",
+    primary: "hsl(157, 62%, 63%)",
+    primaryForeground: "hsl(0, 0%, 100%)",
+    secondary: "hsl(166, 76%, 50%)",
+    secondaryForeground: "hsl(0, 0%, 100%)",
+    muted: "hsl(210, 40%, 96.1%)",
+    mutedForeground: "hsl(215.4, 16.3%, 46.9%)",
+    accent: "hsl(180, 100%, 97%)",
+    accentForeground: "hsl(0, 0%, 10%)",
+    destructive: "hsl(158, 62%, 44%)",
+    destructiveForeground: "hsl(0, 0%, 100%)",
+    input: "hsl(158, 22%, 20%)",
+    ring: "hsl(158, 38%, 36%)",
+  },
+};
+
+export const CustomDarkTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: "hsl(144, 41%, 6%)",
+    foreground: "hsl(166, 100%, 89%)",
+    card: "hsl(144, 41%, 8%)",
+    cardForeground: "hsl(180, 67%, 94%)",
+    text: "hsl(166, 100%, 89%)",
+    border: "hsl(158, 28%, 15%)",
+    primary: "hsl(157, 62%, 63%)",
+    primaryForeground: "hsl(0, 0%, 100%)",
+    secondary: "hsl(166, 76%, 50%)",
+    secondaryForeground: "hsl(0, 0%, 100%)",
+    muted: "hsl(144, 12%, 10%)",
+    mutedForeground: "hsl(240, 4%, 75%)",
+    accent: "hsl(180, 100%, 97%)",
+    accentForeground: "hsl(0, 0%, 10%)",
+    destructive: "hsl(158, 62%, 44%)",
+    destructiveForeground: "hsl(0, 0%, 100%)",
+    input: "hsl(158, 22%, 20%)",
+    ring: "hsl(158, 38%, 36%)",
+  },
+};
