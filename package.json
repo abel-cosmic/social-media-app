@@ -11,13 +11,19 @@
     "lint": "bun run eslint ./app",
     "lint:fix": "bun run eslint ./app --fix",
     "format": "bun run prettier --write .",
-    "format:check": "bun run prettier --check ."
+    "format:check": "bun run prettier --check .",
+    "generate": "graphql-codegen"
   },
   "jest": {
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@apollo/client": "^3.13.7",
     "@expo/vector-icons": "14.1.0",
+    "@graphql-codegen/cli": "^5.0.5",
+    "@graphql-codegen/typescript": "^4.1.6",
+    "@graphql-codegen/typescript-operations": "^4.6.0",
+    "@graphql-codegen/typescript-react-apollo": "^4.3.2",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-navigation/native": "6.1.18",
     "clsx": "2.1.1",
@@ -30,6 +36,7 @@
     "expo-status-bar": "1.12.1",
     "expo-system-ui": "3.0.7",
     "expo-web-browser": "13.0.3",
+    "graphql": "^16.10.0",
     "lucide-react-native": "0.487.0",
     "nativewind": "4.1.23",
     "react": "18.2.0",

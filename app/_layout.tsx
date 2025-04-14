@@ -2,13 +2,13 @@ import { ThemeProvider, useTheme } from "@/providers/theme-context";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useState } from "react";
-import { View, Image } from "react-native";
+import React, { useEffect } from "react";
+import { ActivityIndicator, Image, View } from "react-native";
 import "react-native-reanimated";
 import "../global.css";
 //@ts-ignore
-import logo from "@/assets/logo.png"; // Make sure this path is correct
+import logo from "@/assets/logo.png";
+import { ApolloProvider } from "@/providers/apollo-context";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -39,45 +39,48 @@ function CustomSplashScreen() {
   );
 }
 
+// Loading Component
+function LoadingComponent() {
+  const { resolvedTheme } = useTheme();
+
+  return (
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: resolvedTheme === "dark" ? "#0c0a09" : "#ffffff",
+      }}
+    >
+      <ActivityIndicator
+        size="large"
+        color={resolvedTheme === "dark" ? "#f9fafb" : "#0c0a09"}
+      />
+    </View>
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
     ...FontAwesome.font,
   });
-  const [appIsReady, setAppIsReady] = useState(false);
-
   useEffect(() => {
     if (fontError) throw fontError;
   }, [fontError]);
 
-  useEffect(() => {
-    async function prepare() {
-      try {
-        // Keep the splash screen visible
-        await SplashScreen.preventAutoHideAsync();
 
-        // Simulate loading (replace with actual async tasks if needed)
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-      } catch (e) {
-        console.warn(e);
-      } finally {
-        // Set app as ready
-        setAppIsReady(true);
-        await SplashScreen.hideAsync();
-      }
-    }
-
-    prepare();
-  }, []);
-
-  if (!fontsLoaded || !appIsReady) {
+  // Show splash screen if fonts aren't loaded or app isn't ready
+  if (!fontsLoaded) {
     return <CustomSplashScreen />;
   }
 
   return (
-    <ThemeProvider>
-      <RootLayoutNav />
-    </ThemeProvider>
+    <ApolloProvider>
+      <ThemeProvider>
+        <RootLayoutNav />
+      </ThemeProvider>
+    </ApolloProvider>
   );
 }
 
