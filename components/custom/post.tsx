@@ -1,17 +1,17 @@
 // components/custom/post.tsx
+import { LIKE_POST, UNLIKE_POST } from "@/apollo/queries/post";
 import { ActionBar } from "@/components/custom/action-bar";
 import { CommentModal } from "@/components/custom/comment-modal";
 import { ImageViewer } from "@/components/custom/image-player";
 import { UserInfoFooter } from "@/components/custom/user-info";
 import { VideoPlayer } from "@/components/custom/video-player";
-import { usePostState, Comment } from "@/hooks/post";
-import React from "react";
- //@ts-ignore
+import { useComments } from "@/hooks/graphql/comment";
+import { useMutation } from "@apollo/client";
+import React, { useState } from "react";
 import { Dimensions, View } from "react-native";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-
 interface TikTokPostProps {
+  id: string;
   mediaUri: string;
   mediaType: "video" | "image";
   username: string;
@@ -19,87 +19,131 @@ interface TikTokPostProps {
   caption: string;
   songName?: string;
   likes: number;
-  comments: Comment[];
   bookmarks: number;
   isActive?: boolean;
 }
 
-const TikTokPost: React.FC<TikTokPostProps> = ({
+export default function TikTokPost({
+  id,
   mediaUri,
   mediaType,
   username,
   profilePic,
   caption,
   songName,
-  likes: initialLikes = 0,
-  comments: initialComments = [],
-  bookmarks: initialBookmarks = 0,
+  likes: initialLikes,
+  bookmarks: initialBookmarks,
   isActive = false,
-}) => {
+}: TikTokPostProps) {
+  // State for UI components
+  const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [likes, setLikes] = useState(initialLikes);
+  const [bookmarks, setBookmarks] = useState(initialBookmarks);
+  
+  // Apollo mutations
+  const [likePostMutation] = useMutation(LIKE_POST);
+  const [unlikePostMutation] = useMutation(UNLIKE_POST);
+  
+  // Comments hook
   const {
-    isLiked,
-    isBookmarked,
-    likes,
-    bookmarks,
     comments,
-    commentModalVisible,
-    selectedComment,
-    handleLike,
-    handleBookmark,
-    handleAddComment,
-    handleAddReply,
-    handleLikeComment,
-    setCommentModalVisible,
-    setSelectedComment,
-  } = usePostState({
-    initialLikes,
-    initialComments,
-    initialBookmarks,
-  });
+    loading: commentsLoading,
+    createComment,
+    createReply,
+    deleteComment
+  } = useComments(id);
+  
+  // Selected comment for replying
+  const [selectedComment, setSelectedComment] = useState(null);
 
-  const renderMedia = () => {
-    if (mediaType === "video") {
-      return <VideoPlayer uri={mediaUri} isActive={isActive} />;
-    } else {
-      return <ImageViewer uri={mediaUri} />;
+  // Handle like post
+  const handleLike = async () => {
+    try {
+      if (isLiked) {
+        await unlikePostMutation({ variables: { postId: id } });
+        setLikes(prev => Math.max(0, prev - 1));
+      } else {
+        await likePostMutation({ variables: { postId: id } });
+        setLikes(prev => prev + 1);
+      }
+      setIsLiked(!isLiked);
+    } catch (error) {
+      console.error("Error toggling like:", error);
     }
   };
 
-  return (
-    <View
-      style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
-      className="relative"
-    >
-      <View className="absolute inset-0">{renderMedia()}</View>
+  // Handle bookmark post
+  const handleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+    setBookmarks(isBookmarked ? bookmarks - 1 : bookmarks + 1);
+  };
 
-      <View className="absolute bottom-0 left-2 right-16">
-        <UserInfoFooter
-          username={username}
-          caption={caption}
-          mediaType="image"
-          songName={songName}
-        />
-      </View>
+  // Handle add comment
+  const handleAddComment = async (text: string) => {
+    try {
+      await createComment({
+        postId: id,
+        content: text
+      });
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    }
+  };
+
+  // Handle add reply
+  const handleAddReply = async (text: string, commentId: string) => {
+    try {
+      await createReply(id, text, commentId);
+    } catch (error) {
+      console.error("Error adding reply:", error);
+    }
+  };
+
+  // Handle like comment (implement if backend supports it)
+  const handleLikeComment = (commentId: string) => {
+    console.log("Like comment:", commentId);
+    // Implementation would go here if backend supports it
+  };
+
+  // Screen dimensions for layout
+  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
+  return (
+    <View style={{ width: screenWidth, height: screenHeight }}>
+      {mediaType === "video" && (
+        <VideoPlayer uri={mediaUri} isActive={isActive} />
+      )}
+
+      {mediaType === "image" && <ImageViewer uri={mediaUri} />}
+
+      <UserInfoFooter
+        username={username}
+        caption={caption}
+        songName={songName}
+        mediaType={mediaType}
+      />
 
       <ActionBar
         profilePic={profilePic}
+        likes={likes}
+        comments={comments?.length || 0}
+        bookmarks={bookmarks}
         isLiked={isLiked}
         isBookmarked={isBookmarked}
-        likes={likes}
-        comments={comments.length}
-        bookmarks={bookmarks}
         songName={songName}
         mediaType={mediaType}
         onLike={handleLike}
         onBookmark={handleBookmark}
-        onCommentPress={() => setCommentModalVisible(true)}
+        onCommentPress={() => setIsCommentModalVisible(true)}
       />
 
       <CommentModal
-        visible={commentModalVisible}
-        comments={comments}
+        visible={isCommentModalVisible}
+        comments={comments || []}
         selectedComment={selectedComment}
-        onClose={() => setCommentModalVisible(false)}
+        onClose={() => setIsCommentModalVisible(false)}
         onAddComment={handleAddComment}
         onAddReply={handleAddReply}
         onLikeComment={handleLikeComment}
@@ -109,6 +153,4 @@ const TikTokPost: React.FC<TikTokPostProps> = ({
       />
     </View>
   );
-};
-
-export default TikTokPost;
+}
