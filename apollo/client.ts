@@ -4,7 +4,7 @@ import { onError } from '@apollo/client/link/error';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API endpoint
-const API_URL = 'https://your-graphql-endpoint.com/graphql';
+const API_URL = process.env.REACT_NATIVE_BACKEND_API_URL || 'http://localhost:3000';
 
 // Error handling link
 const errorLink = onError(({ graphQLErrors, networkError }) => {
