@@ -2,6 +2,7 @@
 import React from "react";
 import { ApolloProvider as ApolloClientProvider } from "@apollo/client";
 import { client } from "@/apollo/client";
+import { AuthGuard } from "./auth-gurad";
 
 interface ApolloProviderProps {
   children: React.ReactNode;
@@ -10,7 +11,7 @@ interface ApolloProviderProps {
 export function ApolloProvider({ children }: ApolloProviderProps) {
   return (
     <ApolloClientProvider client={client}>
-      {children}
+      <AuthGuard>{children}</AuthGuard>
     </ApolloClientProvider>
   );
 }

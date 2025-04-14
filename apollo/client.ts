@@ -1,44 +1,73 @@
-import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client';
+import { ApolloClient, InMemoryCache, HttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
+import { onError } from '@apollo/client/link/error';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Set your GraphQL API endpoint
-const API_URL = 'http://your-backend-url:4000/graphql';
+// API endpoint
+const API_URL = 'https://your-graphql-endpoint.com/graphql';
 
-// Create an HTTP link
+// Error handling link
+const errorLink = onError(({ graphQLErrors, networkError }) => {
+  if (graphQLErrors) {
+    graphQLErrors.forEach(({ message, locations, path }) => {
+      console.error(
+        `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`
+      );
+    });
+  }
+  if (networkError) {
+    console.error(`[Network error]: ${networkError}`);
+  }
+});
+
+// HTTP link
 const httpLink = new HttpLink({
   uri: API_URL,
 });
 
-// Auth link middleware for adding JWT token to headers
+// Auth link
 const authLink = setContext(async (_, { headers }) => {
-  // Get the token from storage
-  const token = await AsyncStorage.getItem('auth_token');
-  
-  return {
-    headers: {
-      ...headers,
-      authorization: token ? `Bearer ${token}` : '',
+  try {
+    // Get token from storage
+    const token = await AsyncStorage.getItem('authToken');
+    
+    // Return the headers to the context
+    return {
+      headers: {
+        ...headers,
+        authorization: token ? `Bearer ${token}` : '',
+      },
+    };
+  } catch (error) {
+    console.error('Error getting auth token:', error);
+    return { headers };
+  }
+});
+
+// Cache configuration
+const cache = new InMemoryCache({
+  typePolicies: {
+    Query: {
+      fields: {
+        getAllPosts: {
+          // Merge function for pagination
+          keyArgs: false,
+          merge(existing = { posts: [] }, incoming) {
+            return {
+              ...incoming,
+              posts: [...(existing.posts || []), ...(incoming.posts || [])],
+            };
+          },
+        },
+      },
     },
-  };
+  },
 });
 
 // Create Apollo client
-export const createApolloClient = () => {
-  return new ApolloClient({
-    link: authLink.concat(httpLink),
-    cache: new InMemoryCache(),
-    defaultOptions: {
-      watchQuery: {
-        fetchPolicy: 'network-only',
-        errorPolicy: 'all',
-      },
-      query: {
-        fetchPolicy: 'network-only',
-        errorPolicy: 'all',
-      },
-    },
-  });
-};
+export const client = new ApolloClient({
+  link: from([errorLink, authLink, httpLink]),
+  cache,
+});
 
-export const client = createApolloClient();
+export default client;

@@ -1,18 +1,19 @@
+import Logo from "@/components/custom/logo";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/graphql/auth";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "@/providers/theme-context";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import Logo from "@/components/custom/logo";
 
 export default function SignUpScreen() {
   const [username, setUsername] = useState("");
@@ -20,64 +21,78 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const { resolvedTheme } = useTheme();
-
-  const isDark = resolvedTheme === "dark";
+  const { register } = useAuth();
 
   const handleSignUp = async () => {
+    // Validation
     if (!username || !email || !password || !confirmPassword) {
-      alert("Please fill in all fields");
+      Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      Alert.alert("Error", "Passwords do not match");
       return;
     }
 
-    setIsLoading(true);
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters");
+      return;
+    }
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      setIsLoading(true);
+      const result = await register(username, email, password);
+
+      if (result.success) {
+        // Navigate to main app
+        router.replace("/(tabs)");
+      } else {
+        Alert.alert("Error", result.message || "Failed to sign up");
+      }
+    } catch (error) {
+      console.error("Sign up error:", error);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    } finally {
       setIsLoading(false);
-      // Navigate to home on successful registration
-      router.replace("/(tabs)");
-    }, 1500);
+    }
   };
 
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
   };
 
+  const toggleShowConfirmPassword = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className={`flex-1 bg-background`}
+      className="flex-1"
     >
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
-        className="flex-1 p-5"
+        keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-1 justify-center">
-          <Logo />
-
-          <View className="w-full mt-4">
-            <Text
-              className={`text-2xl font-bold mb-6 text-center text-foreground`}
-            >
+        <View className={`flex-1 justify-center px-8 py-12 text-foreground`}>
+          <View className="items-center mb-8">
+            <Logo />
+            <Text className={`text-3xl font-bold mt-4 text-foreground`}>
               Create Account
             </Text>
+          </View>
 
+          <View className="space-y-4">
             <Input
               label="Username"
-              placeholder="Enter your username"
+              placeholder="Choose a username"
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
-              isDark={isDark}
-            />
+                 />
 
             <Input
               label="Email"
@@ -86,60 +101,67 @@ export default function SignUpScreen() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              isDark={isDark}
             />
 
             <View className="relative">
               <Input
                 label="Password"
-                placeholder="Enter your password"
+                placeholder="Create a password"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
-                isDark={isDark}
-                className="pr-10"
               />
               <TouchableOpacity
                 onPress={toggleShowPassword}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                className="absolute right-3 top-9"
               >
                 <Ionicons
                   name={showPassword ? "eye-off" : "eye"}
-                  size={20}
-                  color={isDark ? "#9ca3af" : "#6b7280"}
+                  size={24}
+                  color={"gray"}
                 />
               </TouchableOpacity>
             </View>
 
-            <Input
-              label="Confirm Password"
-              placeholder="Confirm your password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showPassword}
-              isDark={isDark}
-            />
+            <View className="relative">
+              <Input
+                label="Confirm Password"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity
+                onPress={toggleShowConfirmPassword}
+                className="absolute right-3 top-9"
+              >
+                <Ionicons
+                  name={showConfirmPassword ? "eye-off" : "eye"}
+                  size={24}
+                  color={"gray"}
+                />
+              </TouchableOpacity>
+            </View>
 
             <Button
               variant="default"
-              isLoading={isLoading}
+              size="lg"
               onPress={handleSignUp}
-              className="mt-2"
-            >
+              isLoading={isLoading}
+           >
               Sign Up
             </Button>
 
             <View className="flex-row justify-center mt-6">
-              <Text className={"text-foreground"}>
+              <Text className={`text-foreground`}>
                 Already have an account?{" "}
               </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  //@ts-ignore
-                  router.push("sign-in");
-                }}
-              >
-                <Text className="text-primary font-medium">Sign In</Text>
+              <TouchableOpacity onPress={() => router.push("/sign-in")}>
+                <Text
+                  className={`font-semibold text-primary`}
+                >
+                  Sign In
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

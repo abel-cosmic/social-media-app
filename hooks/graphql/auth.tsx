@@ -1,35 +1,29 @@
-// hooks/useAuth.ts
-import { useState } from "react";
-import { useMutation, useQuery } from "@apollo/client";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery, ApolloClient } from "@apollo/client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { client } from "../../apollo/client";
+import { client } from "@/apollo/client";
 import { REGISTER_USER, LOGIN_USER, CURRENT_USER } from "@/apollo/queries/auth";
 
 export const useAuth = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Registration mutation
-  const [registerMutation, { loading: registerLoading }] =
-    useMutation(REGISTER_USER);
-
-  // Login mutation
-  const [loginMutation, { loading: loginLoading }] = useMutation(LOGIN_USER);
-
-  // Get current user query
-  const {
-    data: userData,
-    loading: userLoading,
-    refetch: refetchUser,
-  } = useQuery(CURRENT_USER, {
-    skip: !isLoggedIn,
+  const [registerMutation] = useMutation(REGISTER_USER);
+  const [loginMutation] = useMutation(LOGIN_USER);
+  const { data: userData, refetch } = useQuery(CURRENT_USER, {
+    skip: !isAuthenticated,
     onCompleted: (data) => {
       if (data?.currentUser) {
-        setIsLoggedIn(true);
+        setUser(data.currentUser);
       }
     },
   });
 
-  // Register function
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
   const register = async (
     username: string,
     email: string,
@@ -37,85 +31,80 @@ export const useAuth = () => {
   ) => {
     try {
       const { data } = await registerMutation({
-        variables: {
-          input: { username, email, password },
-        },
+        variables: { input: { username, email, password } },
       });
 
-      if (data?.register.token) {
-        await AsyncStorage.setItem("auth_token", data.register.token);
-        setIsLoggedIn(true);
-        return { success: true, user: data.register.user };
+      if (data?.register?.token) {
+        await AsyncStorage.setItem("authToken", data.register.token);
+        setIsAuthenticated(true);
+        await refetch();
+        return { success: true };
       }
-      return { success: false, error: "Registration failed" };
+      return { success: false, message: "Registration failed" };
     } catch (error) {
-      console.error("Registration error:", error);
+      console.error("Register error:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: error.message || "Registration failed",
       };
     }
   };
 
-  // Login function
   const login = async (email: string, password: string) => {
     try {
       const { data } = await loginMutation({
-        variables: { email, password },
+        variables: { input: { email, password } },
       });
 
-      if (data?.login.token) {
-        await AsyncStorage.setItem("auth_token", data.login.token);
-        setIsLoggedIn(true);
-        return { success: true, user: data.login.user };
+      if (data?.login?.token) {
+        await AsyncStorage.setItem("authToken", data.login.token);
+        setIsAuthenticated(true);
+        await refetch();
+        return { success: true };
       }
-      return { success: false, error: "Login failed" };
+      return { success: false, message: "Login failed" };
     } catch (error) {
       console.error("Login error:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: error.message || "Login failed",
       };
     }
   };
 
-  // Logout function
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem("auth_token");
-      setIsLoggedIn(false);
-      // Reset Apollo cache
+      await AsyncStorage.removeItem("authToken");
+      // Reset Apollo store to clear cached queries
       await client.resetStore();
+      setIsAuthenticated(false);
+      setUser(null);
       return { success: true };
     } catch (error) {
       console.error("Logout error:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
+      return { success: false, message: "Logout failed" };
     }
   };
 
-  // Check if user is logged in on mount
   const checkAuth = async () => {
     try {
-      const token = await AsyncStorage.getItem("auth_token");
+      setIsLoading(true);
+      const token = await AsyncStorage.getItem("authToken");
       if (token) {
-        setIsLoggedIn(true);
-        await refetchUser();
-        return true;
+        setIsAuthenticated(true);
+        await refetch();
       }
-      return false;
     } catch (error) {
-      console.error("Auth check error:", error);
-      return false;
+      console.error("Check auth error:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return {
-    isLoggedIn,
-    user: userData?.currentUser,
-    loading: registerLoading || loginLoading || userLoading,
+    user,
+    isLoading,
+    isAuthenticated,
     register,
     login,
     logout,

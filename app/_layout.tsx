@@ -69,7 +69,6 @@ export default function RootLayout() {
     if (fontError) throw fontError;
   }, [fontError]);
 
-
   // Show splash screen if fonts aren't loaded or app isn't ready
   if (!fontsLoaded) {
     return <CustomSplashScreen />;
